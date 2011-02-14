@@ -2220,240 +2220,6 @@ Just to show some nice transitions. Nothing special here :)
 .fancybox-ie #fancybox-bg-nw { filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src='fancybox/fancy_shadow_nw.png', sizingMethod='scale'); }
 /*}}}*/</pre>
 </div>
-<div title="Privateer" server.title="Privateer" server.page.revision="123062" server.etag="&quot;privateer_public/Privateer/123062;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="cdent" creator="cdent" server.workspace="bags/privateer_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="privateer_public" server.permissions="read, write, create, delete" server.content-type="text/html" modified="20101213113824" created="20101112173333" tags="" _hash="492dac223a2b606e4b196f8132c2332c29c11e89">
-<pre>&lt;html&gt;
-    &lt;head&gt;
-        &lt;title&gt;Privateer&lt;/title&gt;
-&lt;script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"
-        type="text/javascript"&gt;&lt;/script&gt;
-&lt;script src="/chrjs" type="text/javascript"&gt;&lt;/script&gt;
-       &lt;link rel="stylesheet" href="/bags/common/tiddlers/tiddlyweb.css" type="text/css" /&gt;
-
-&lt;style&gt;
-h1, ul {
-    padding-bottom: .5em;
-}
-&lt;/style&gt;
-    &lt;/head&gt;
-    &lt;body&gt;
-        &lt;div id='header'&gt;
-        &lt;h1&gt;Privateer&lt;/h1&gt;
-        &lt;/div&gt;
-        &lt;div id='content'&gt;
-        &lt;div class="tiddler"&gt;
-        &lt;h1&gt;Make a Public URI for a Private one&lt;/h1&gt;
-        &lt;form name='privatize' id='privatize'
-            action='/_' method='POST'&gt;
-            &lt;select name='uri'&gt;
-                &lt;option value='view_space'&gt;
-                Private View of this Space&lt;/option&gt;
-                &lt;option value='atom_space'&gt;
-                Private Atom Feed of this Space&lt;/option&gt;
-                &lt;option value='view_tiddler'&gt;
-                Private View of a single Tiddler&lt;/option&gt;
-                &lt;option value='atom_tiddler'&gt;
-                Private Atom Feed of a single Tiddler&lt;/option&gt;
-            &lt;/select&gt;
-            &lt;select name='tiddler' disabled&gt;
-            &lt;/select&gt;
-            &lt;input type='submit' name='submit' /&gt;
-            &lt;input type='hidden' name='csrf_token' /&gt;
-        &lt;/form&gt;
-        &lt;/div&gt;
-        &lt;div id='message'&gt;&lt;/div&gt;
-        &lt;div class='tiddler'&gt;
-        &lt;h1&gt;List Existing Mappings&lt;/h1&gt;
-        &lt;div&gt;Show Mappings:
-            &lt;input type='checkbox' name='shower' /&gt;
-        &lt;div&gt;
-        &lt;form name='deletemachine'&gt;
-        &lt;ul id='mappings'&gt;
-        &lt;/ul&gt;
-            Select All: &lt;input type='checkbox' name='selectall' /&gt;
-            &lt;input type='Submit' name='Submit' value='Delete Selected' /&gt;
-        &lt;/form&gt;
-        &lt;/div&gt;
-        &lt;/div&gt;
-    &lt;/body&gt;
-&lt;script&gt;
-// form handling
-(function() {
-    // doesn't work for BYOD
-    var location = window.location;
-    var spaceName = location.hostname.split('.', 1)[0];
-    var spaceURI = location.protocol + '//' + location.host + '/';
-    var privatizeForm = $('form[name=privatize]');
-    var deleteForm = $('form[name=deletemachine]');
-    var formAction = privatizeForm.attr('action');
-    var lister = $('#mappings');
-    var uriSelect = privatizeForm.children('select[name=uri]');
-    var tiddlerSelect = privatizeForm.children('select[name=tiddler]');
-
-    var readCookie = function(name) {
-        var nameEQ = name + "=";
-        var ca = document.cookie.split(';');
-        for(var i=0;i &lt; ca.length;i++) {
-            var c = ca[i];
-            while (c.charAt(0)==' ') c = c.substring(1,c.length);
-            if (c.indexOf(nameEQ) == 0) {
-                return c.substring(nameEQ.length,c.length);
-            }
-        }
-        return null;
-    };
-
-    var updateCSRF = function(form) {
-        var token = readCookie('csrf_token');
-        var csrf_token = form.find("[name=csrf_token]");
-        csrf_token.val(token);
-    }
-
-    var updatePrivateSuccess = function(data, status, xhr) {
-        $.each(data, function(index, tiddler) {
-            $('&lt;option&gt;').val(tiddler.title).text(tiddler.title)
-                .appendTo(tiddlerSelect);
-        });
-    };
-
-    var updatePrivateError = function(xhr, status, exc) {
-        $('#message').text('Unable to get private tiddlers:' + xhr.statusText);
-    };
-
-    var updatePrivateTiddlers = function() {
-        var bag = new tiddlyweb.Bag(spaceName + '_private', spaceURI);
-        bag.tiddlers().get(updatePrivateSuccess, updatePrivateError);
-    };
-
-    var establishEvents = function() {
-        // listen for change on uri select
-        uriSelect.change(function() {
-            var current = $(this).val()
-            if (current.indexOf('_tiddler') != -1) {
-                tiddlerSelect.removeAttr('disabled');
-            } else {
-                tiddlerSelect.attr('disabled', 'true');
-            }
-        });
-
-        // XXX probably need to clear text other times too
-        tiddlerSelect.change(function() {
-            $('#message').text('');
-        });
-
-        // listen for submit on the form, process data, then submit
-        privatizeForm.submit(function() {
-            var csrf_token = privatizeForm.find("[name=csrf_token]").val();
-            var uri = uriSelect.val();
-            var tiddler = tiddlerSelect.val();
-            var atom = uri.indexOf('atom_') == -1 ? '' : '.atom';
-            var postingURI;
-            if (uri.indexOf('_tiddler') != -1) {
-                // we have a tiddler
-                if (tiddler &amp;&amp; tiddler != '-') {
-                    postingUri = spaceURI + encodeURIComponent(tiddler) + atom;
-                } else {
-                    $('#message').text('You need to provide a tiddler title');
-                    return false;
-                }
-            } else { 
-                // we have a collection
-                if (atom) {
-                    postingUri = spaceURI + 'recipes/' + spaceName + '_private/tiddlers' + atom;
-                } else {
-                    postingUri = spaceURI;
-                }
-            }
-            $.ajax({url: formAction,
-                type: 'POST',
-                data: {uri: postingUri, csrf_token: csrf_token},
-                success: function(data, status, xhr) {
-                    var location = xhr.getResponseHeader('location');
-                    $('#message').text(location);
-                    updateLister();
-                },
-                error: function(xhr, error, exc) {
-                    $('#message').text('Error when posting: ' + xhr.statuText);
-                }
-            });
-            return false;
-        });
-
-        $('input[name=shower]').click(function() {
-            if ($('.mapping').is(':visible')) {
-                $('.mapping').hide();
-            } else {
-                $('.mapping').show();
-            }
-        });
-
-        $('input[name=selectall]').click(function() {
-            $('input[name=deletor]').each(function(index) {
-                $(this).attr('checked',
-                    $('input[name=selectall]').attr('checked') ? true : false);
-            });
-        });
-
-        deleteForm.submit(function() {
-            var deletes = [];
-            $('input[name=deletor]').each(function(index) {
-                if ($(this).attr('checked')) {
-                    deleteMap($(this).val());
-                }
-            })
-            return false;
-        });
-    };
-
-    var updateListerSuccess = function(data, status, xhr) {
-        lister.empty();
-        $.each(data, function(map, target) {
-            var el = $('&lt;li /&gt;');
-            $('&lt;input type="checkbox" name="deletor" /&gt;').val(map)
-                .appendTo(el);
-            $('&lt;a /&gt;').attr('href', target).attr('title', map).text(target)
-                .appendTo(el);
-            $('&lt;span /&gt;').text(map).addClass('mapping').hide().appendTo(el);
-            lister.append(el);
-        });
-    };
-
-    var updateListerError = function(xhr, error, exc) {
-        $('#message').text('Error when getting listings: ' + xhr.statusText);
-    }
-
-    var updateLister = function() {
-        $.ajax({ url: '/_',
-            type: 'GET',
-            dataType: 'json',
-            success: updateListerSuccess,
-            error: updateListerError
-        });
-    };
-
-    var deleteMap = function(target) {
-        $.ajax({
-            url: target,
-            type: 'DELETE',
-            success: function(data, status, xhr) {
-                updateLister();
-            },
-            error: function(xhr, error, exc) {
-                $('#message').text('Error when deleting listing: ' + xhr.statusText);
-            }
-        });
-    };
-
-    updateCSRF(privatizeForm);
-    establishEvents();
-    updatePrivateTiddlers();
-    updateLister();
-
-})();
-
-&lt;/script&gt;
-&lt;/html&gt;
-</pre>
-</div>
 <div title="Example_SlideShowConfig" server.title="Example_SlideShowConfig" server.page.revision="253434" server.etag="&quot;fancybox_public/Example_SlideShowConfig/253434;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="pmario" creator="pmario" server.workspace="bags/fancybox_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="fancybox_public" server.permissions="read, write, create, delete" server.content-type="" modified="20110213195539" created="20110126175623" tags="example medium" sort.medium="0001" _hash="e82ee8de37fe403186ea99595304e80937c735e9">
 <pre>!!Usage
 &lt;&lt;&lt;
@@ -4290,8 +4056,8 @@ var macro = config.macros.TiddlySpaceSpaces = { // TODO: rename
 [[StyleSheetMediaPrint]]
 /*}}}*/</pre>
 </div>
-<div title="DefaultTiddlers" server.title="DefaultTiddlers" server.page.revision="122997" server.etag="&quot;privateer_public/DefaultTiddlers/122997;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="cdent" creator="cdent" server.workspace="bags/privateer_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="privateer_public" server.permissions="read, write, create, delete" server.content-type="" modified="20101115152543" created="20101115152543" tags="" _hash="84167ae93b8c9c087e65b8a0d46476d3453a1d17">
-<pre>[[HelloThere]]</pre>
+<div title="DefaultTiddlers" server.title="DefaultTiddlers" server.page.revision="107079" server.etag="&quot;neui-em_public/DefaultTiddlers/107079;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="pmario" creator="pmario" server.workspace="bags/neui-em_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="neui-em_public" server.permissions="read, write, create, delete" server.content-type="" modified="20100918165810" created="20100806192302" tags="excludeLists" _hash="ff104d449420c166858787134d7183c5a0993955">
+<pre>[tag[default]]</pre>
 </div>
 <div title="MpBlue" server.title="MpBlue" server.page.revision="107132" server.etag="&quot;neui-em_public/MpBlue/107132;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="pmario" creator="pmario" server.workspace="bags/neui-em_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="neui-em_public" server.permissions="read, write, create, delete" server.content-type="" modified="20100918170546" created="20100806192303" tags="excludeLists" _hash="7241d8ff222af90a09db28bdf237d359c4160da4">
 <pre>/*{{{*/
@@ -6971,10 +6737,6 @@ config.quickOpenTag.init();
 }}}
 &lt;&lt;&lt;</pre>
 </div>
-<div title="HelloThere" server.title="HelloThere" server.page.revision="123002" server.etag="&quot;privateer_public/HelloThere/123002;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="cdent" creator="cdent" server.workspace="bags/privateer_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="privateer_public" server.permissions="read, write, create, delete" server.content-type="" modified="20101115153356" created="20101112191150" tags="excludeMissing excludeSearch" _hash="a8ffc2b48408f4eddf84a49075a775787df6d0bc">
-<pre>&lt;&lt;tiddler SiteInfo&gt;&gt;
-&lt;&lt;tiddler PrivateerInstructions&gt;&gt;</pre>
-</div>
 <div title="StyleSheetHeaderMp" server.title="StyleSheetHeaderMp" server.page.revision="107280" server.etag="&quot;neui-em_public/StyleSheetHeaderMp/107280;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="pmario" creator="pmario" server.workspace="bags/neui-em_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="neui-em_public" server.permissions="read, write, create, delete" server.content-type="" modified="20101228094839" created="20100806192303" tags="excludeLists" _hash="d45db206eeb8f23a3cc0b3f74b9a339f644fb671">
 <pre>/*{{{*/
 .headerForeground {
@@ -9493,8 +9255,12 @@ width="30" height="30"&gt;
 &lt;/g&gt;
 &lt;/svg&gt;</pre>
 </div>
-<div title="MainMenu" server.title="MainMenu" server.page.revision="123003" server.etag="&quot;privateer_public/MainMenu/123003;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="cdent" creator="cdent" server.workspace="bags/privateer_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="privateer_public" server.permissions="read, write, create, delete" server.content-type="" modified="20101115160614" created="20101115160614" tags="" _hash="84167ae93b8c9c087e65b8a0d46476d3453a1d17">
-<pre>[[HelloThere]]</pre>
+<div title="MainMenu" server.title="MainMenu" server.page.revision="107126" server.etag="&quot;neui-em_public/MainMenu/107126;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="pmario" creator="pmario" server.workspace="bags/neui-em_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="neui-em_public" server.permissions="read, write, create, delete" server.content-type="" modified="20101018165508" created="20100806192302" tags="" _hash="2605c5887329b618d8cc0329c20c5c09cbcbf79e">
+<pre>{{noBullets{&lt;&lt;xList xCase "sort." "." "[tag[mainMenu]]"&gt;&gt;}}}/%
+see the descriptions about the above at: http://apm-plugins.tiddlyspot.com/#StylingPackage.
+have fun!
+-m
+%/</pre>
 </div>
 <div title="EmasticSystem" server.title="EmasticSystem" server.page.revision="107086" server.etag="&quot;neui-em_public/EmasticSystem/107086;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="pmario" creator="pmario" server.workspace="bags/neui-em_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="neui-em_public" server.permissions="read, write, create, delete" server.content-type="" modified="20101104204114" created="20100806192304" tags="EmasticSystem FreeStyle excludeLists" taggly.listmode="commas" _hash="2da0f856de248dd1443585c6d250f195849f10c3">
 <pre>/***
@@ -19746,37 +19512,6 @@ config.macros.list.xCase.handler = function(params){
 } //# end of "install only once"
 
 /*}}}*/</pre>
-</div>
-<div title="PrivateerInstructions" server.title="PrivateerInstructions" server.page.revision="123068" server.etag="&quot;privateer_public/PrivateerInstructions/123068;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="cdent" creator="cdent" server.workspace="bags/privateer_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="privateer_public" server.permissions="read, write, create, delete" server.content-type="" modified="20101115170043" created="20101115153341" tags="" _hash="51b264f558802cbf6892512cf6dc75075380b7a5">
-<pre>[[Privateer|/Privateer]] can be useful if you want to share otherwise private content (such as a tiddler containing a work in progress) with a non-member or want to add access to a private feed to a feed reader.
-
-The URIs that are created use what are called [[UUIDs|http://en.wikipedia.org/wiki/Universally_unique_identifier]]. These are so unique that the odds of being able to guess one are very //very// //''very''// low.
-
-When you create a mapped URI with [[Privateer|/Privateer]] it is owned by you. When you share it with someone else, when they use it, they gain access to the resource //as you//. Internally the system believes it is you making the request.
-
-Only {{{GET}}} requests can be mapped.
-
-To use, include the privateer space in your space and then access the [[Privateer|/Privateer]] single page application. For general use it is best to include the tool in the space for which you wish to create mappings as the URIs are calculated from the browser's current location.
-
-If you want to do more interesting things see [[AdvancedPrivateer]].</pre>
-</div>
-<div title="AdvancedPrivateer" server.title="AdvancedPrivateer" server.page.revision="122995" server.etag="&quot;privateer_public/AdvancedPrivateer/122995;38557a300c7db6bf205b78f536236444a956e37a&quot;" modifier="cdent" creator="cdent" server.workspace="bags/privateer_public" server.type="tiddlyweb" server.host="http://fancybox.tiddlyspace.com/" server.recipe="fancybox_private" server.bag="privateer_public" server.permissions="read, write, create, delete" server.content-type="" modified="20101115154538" created="20101115154538" tags="" _hash="c5e693aaa43c8d7d652a639cf5de252c5be6e4d0">
-<pre>[[Privateer|/Privateer]] operates by making requests against an HTTP API on the TiddlySpace server. That API can be accessed with your own tools if you like. The API is quite simple:
-
-!!{{{GET /_}}}
-Get a JSON listing of all mappings belonging to the current user formed as a dictionary mapping the external public URI to the internal private URI. The URIs are fully qualified with hostname and may involve multiple hostnames if there are mappings from multiple spaces.
-
-!!{{{GET /_/&lt;mapping id&gt;}}}
-Get the private resource mapped by mapping id. Internally the current user is identified as the user that created the mapping, not the user actually making the request.
-
-!!{{{DELETE /_/&lt;mapping id&gt;}}}
-If the current user matches the user that created the mapping, delete, irrevocably, the mapping.
-
-!!{{{POST /_}}}
-If the current user is not {{{GUEST}}} accept posted data to create a mapping. If the mapping is successful the response is {{{201}}} and the {{{Location}}} header contains the mapping URI. The posted content is either:
-* a {{{JSON}}} dictionary with a key named {{{uri}}} with a value of the URI to be mapped to.
-* a url-encoded parameter string with a parameter named {{{uri}}} with a value of the URI to be mapped to.
-</pre>
 </div>
 </div>
 <!--POST-STOREAREA-->
