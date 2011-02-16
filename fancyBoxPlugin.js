@@ -2,7 +2,7 @@
 |''Name''|FancyBoxPlugin|
 |''Description''|Wraps the jQuery.fancybox() function into a TiddlyWiki friendly macro|
 |''Author''|PMario|
-|''Version''|0.4.4|
+|''Version''|0.4.5|
 |''Status''|''beta''|
 |''Source''|http://fancybox-plugin.tiddlyspace.com/|
 |''License''|http://www.opensource.org/licenses/mit-license.php|
@@ -54,8 +54,8 @@ see: http://fancybox.net/api
 version.extensions.FancyBox = {
 	major: 0,
 	minor: 4,
-	revision: 4,
-	date: new Date(2011, 2, 13)
+	revision: 5,
+	date: new Date(2011, 2, 15)
 };
 
 (function ($) {
@@ -108,6 +108,15 @@ version.extensions.FancyBox = {
 
 		createElement: function (tagName, thumbURI, picURI, label, relId, alt, data) {
 			return '<span class="twfb-list twfb-' + tagName + '">' + '<a class="imageLink" rel="' + relId + '" href=' + picURI + '>' + '<img title="' + label + '" alt="' + alt + '" src="' + thumbURI + '" />' + '</a>' + '</span>';
+		},
+
+		createStack: function () {
+			var xx;
+			//			(parent, element, id, className, text, attribs)
+			xx = createTiddlyElement(place, 'div', null, 'stackLeft');
+			xx = createTiddlyElement(xx, 'div', null, 'stackRight');
+			xx = createTiddlyElement(xx, 'div', null, 'stackNormal');
+			return xx;
 		},
 
 		calcTextSlices: function (text) {
@@ -230,8 +239,9 @@ version.extensions.FancyBox = {
 			}
 
 			// ToDo clean up redundant code
+			var i;
 			if (!data.picHost && cma.getAttachment) {
-				for (var i = 0; i < list.length; i += 1) {
+				for (i = 0; i < list.length; i += 1) {
 					slide = store.getTiddlerText(list[i].title + '##slide');
 
 					thumbURI = cma.getAttachment(list[i].title);
@@ -244,21 +254,17 @@ version.extensions.FancyBox = {
 					label = (list[i].label) ? list[i].label : '';
 					alt = (alt) ? alt : label;
 					elem = this.createElement(data.tagName, thumbURI, picURI, label, relId, alt);
-
-					jQuery(elem).appendTo($(listElem)[0]);
-				}
+					jQuery(elem).appendTo($(listElem)[0]);				}
 			}
 			else {
-				for (var i = 0; i < list.length; i += 1) {
+				for (i = 0; i < list.length; i += 1) {
 					thumbURI = (data.thumbHost) ? data.thumbHost + list[i].title : list[i].title;
 					picURI = (data.conf.href) ? data.conf.href : (data.picHost) ? data.picHost + list[i].title : list[i].title;
 
 					label = (list[i].label) ? list[i].label : '';
 					alt = (alt) ? alt : label;
 					elem = this.createElement(data.tagName, thumbURI, picURI, label, relId, alt);
-
-					jQuery(elem).appendTo($(listElem)[0]);
-				}
+					jQuery(elem).appendTo($(listElem)[0]);				}
 			}
 			return data;
 		},
@@ -299,6 +305,26 @@ version.extensions.FancyBox = {
 			return Crypto.hexSha1Str(time + '@' + space + '-' + random);
 		},
 
+		rdSlideInfo: function (list, data){
+			var fbTitle, fbInfo = '';
+			
+			for ( var i=0; i<list.length; i += 1 ) {
+				if (data.titleSection) {
+					fbTitle = store.getTiddlerText(list[i].title + '##' + data.titleSection);
+					fbTitle = (fbTitle) ? fbTitle.trim() : '';
+				}
+				if (data.infoSection) {
+					fbInfo = store.getTiddlerText(list[i].title + '##' + data.infoSection);
+					fbInfo = (fbInfo)? fbInfo.trim():'';
+				}
+
+				list[i].label = (list[i].label) ? list[i].label : (fbTitle) ? fbTitle : ''; 
+				list[i].fbInfo = fbInfo;
+			}
+			// console.log({'rdSlideInfo.list':list});
+			return list;
+		},
+		
 		handler: function (place, macroName, params, wikifier, paramString, tiddler) {
 			params = paramString.parseParams('pictureLink', null, true);
 
@@ -369,8 +395,18 @@ version.extensions.FancyBox = {
 				data.tagName = tagName;
 			}
 
+			// titleSection .. references the given sections to be used as the picture title
+			// only overwritten by named param title.
+			var titleSection = getParam(params, 'titleSection', undefined);
+			data.titleSection = (titleSection) ? titleSection : (data.conf.titleSection)? data.conf.titleSection : '';
+
+			// docuSection .. references the given section to be used as the picture info, displayed with special titles
+			var infoSection = getParam(params, 'infoSection', undefined);
+			data.infoSection = (infoSection) ? infoSection : (data.conf.infoSection)? data.conf.infoSection : '';
+
 			// set slideShow like: SlideShowExample
 			var txtImageButton = getParam(params, 'imageButton', undefined);
+			var txtImageStack = getParam(params, 'imageStack', undefined);
 			var txtButton = getParam(params, 'button', undefined);
 
 			if (txtImageButton) {
@@ -379,6 +415,10 @@ version.extensions.FancyBox = {
 			}
 			else if (txtButton) {
 				data.mode = 'button';
+				data.hide = true;
+			}
+			else if (txtImageStack) {
+				data.mode = 'imageStack';
 				data.hide = true;
 			}
 
@@ -390,11 +430,12 @@ version.extensions.FancyBox = {
 			var genId = me.idGenerator();
 			data.genIdA = 'A' + genId.substr(1, 6);
 
-			var tlist;
+			var tlist, xlist;
 			switch (data.src) {
 			case 'tag':
 				tlist = store.getTaggedTiddlers(data.tagName, data.sortField);
-				data = me.thumbList(tlist, data);
+				xlist = me.rdSlideInfo(tlist, data);
+				data = me.thumbList( xlist, data);
 				break; // 'tag'
 			case 'pictureLink':
 				tlist = [];
@@ -405,6 +446,7 @@ version.extensions.FancyBox = {
 					tlist[i].label = (label && label[i]) ? label[i] : '';
 				}
 
+				tlist = me.rdSlideInfo(tlist,data);
 				data = me.thumbList(tlist, data);
 				break; // 'tag'
 			case 'list':
@@ -413,8 +455,14 @@ version.extensions.FancyBox = {
 				break; // 'list'
 			}
 
-			console.log({'data':data});
+			// console.log({'data':data});
 			switch (data.mode) {
+
+			case 'imageStack':
+				if ($.support.cssProperty('transform')) {place = me.createStack();};
+				txtImageButton = txtImageStack;
+				// console.log('imageStack:', place);
+				// fall through is by intention
 			case 'imageButton':
 				// automatically makes use of AttachFilePluginFormatters
 				// check dependencies ToDo
