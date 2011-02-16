@@ -87,7 +87,7 @@ version.extensions.FancyBox = {
 				
 		setFbAdvanced: function (conf, params) {
 			// set the fancyBox advanced options
-			p = ['type', 'href', 'title', 'content', 'orig', 'index'];
+			var p = ['type', 'href', 'title', 'content', 'orig', 'index'];
 			
 			var tmp; 
 			for (var i=0, im = p.length; i<im; i += 1) {
