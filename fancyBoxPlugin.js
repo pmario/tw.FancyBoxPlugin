@@ -100,7 +100,11 @@ version.extensions.FancyBox = {
 		},
 
 		createElement: function (tagName, thumbURI, picURI, label, relId, alt, data) {
-			return '<span class="twfb-list twfb-' + tagName + '">' + '<a class="imageLink" rel="' + relId + '" href=' + picURI + '>' + '<img title="' + label + '" alt="' + alt + '" src="' + thumbURI + '" />' + '</a>' + '</span>';
+			return '<span class="twfb-list twfb-' + tagName + '">' + 
+						'<a class="imageLink" rel="' + relId + '" href=' + picURI + '>' + 
+							'<img title="' + label + '" alt="' + alt + '" src="' + thumbURI + '" />' + 
+						'</a>' + 
+					'</span>';
 		},
 
 		createStack: function () {
@@ -212,10 +216,10 @@ version.extensions.FancyBox = {
 				relId = data.genIdA;
 			}
 
-			// ToDo clean up redundant code
-			var i;
+			var i, im;
+			// if picHost is not defined check for info from attachment
 			if (!data.picHost && cma.getAttachment) {
-				for (i = 0; i < list.length; i += 1) {
+				for (i = 0, im = list.length; i < im; i += 1) {
 					slide = store.getTiddlerText(list[i].title + '##slide');
 
 					thumbURI = cma.getAttachment(list[i].title);
@@ -228,10 +232,11 @@ version.extensions.FancyBox = {
 					label = (list[i].label) ? list[i].label : '';
 					alt = (alt) ? alt : label;
 					elem = this.createElement(data.tagName, thumbURI, picURI, label, relId, alt);
-					jQuery(elem).appendTo($(listElem)[0]);				}
+					jQuery(elem).appendTo($(listElem)[0]);				
+				}
 			}
 			else {
-				for (i = 0; i < list.length; i += 1) {
+				for (i = 0, im = list.length; i < im; i += 1) {
 					thumbURI = (data.thumbHost) ? data.thumbHost + list[i].title : list[i].title;
 					picURI = (data.conf.href) ? data.conf.href : (data.picHost) ? data.picHost + list[i].title : list[i].title;
 
