@@ -2,7 +2,7 @@
 |''Name''|FancyBoxPlugin|
 |''Description''|Wraps the jQuery.fancybox() function into a TiddlyWiki friendly macro|
 |''Author''|PMario|
-|''Version''|0.4.5|
+|''Version''|0.4.6|
 |''Status''|''beta''|
 |''Source''|http://fancybox-plugin.tiddlyspace.com/|
 |''License''|http://www.opensource.org/licenses/mit-license.php|
@@ -55,7 +55,7 @@ version.extensions.FancyBox = {
 	major: 0,
 	minor: 4,
 	revision: 5,
-	date: new Date(2011, 2, 15)
+	date: new Date(2011, 2, 16)
 };
 
 (function ($) {
@@ -297,12 +297,10 @@ version.extensions.FancyBox = {
 		},
 		// activate Box
 		idGenerator: function () {
-			var space = 'fancybox.tiddlyspace.com';
 			var date = new Date();
-			var time = date.getTime();
 			var random = Math.floor(Math.random() * 1000);
 
-			return Crypto.hexSha1Str(time + '@' + space + '-' + random);
+			return Crypto.hexSha1Str(date.getTime() + '@' + document.location.href + '-' + random);
 		},
 
 		rdSlideInfo: function (list, data){
