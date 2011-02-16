@@ -92,7 +92,7 @@ version.extensions.FancyBox = {
 			var tmp; 
 			for (var i=0, im = p.length; i<im; i += 1) {
 				tmp = getParam( params, p[i], undefined);
-				if (tmp) conf[p[i]] = tmp; 
+				if (tmp) {conf[p[i]] = tmp;} 
 			}
 
 			// console.log({'conf':conf});
@@ -105,7 +105,7 @@ version.extensions.FancyBox = {
 
 		createStack: function () {
 			var xx;
-			//			(parent, element, id, className, text, attribs)
+			// createTiddlyElement( parent, element, id, className, text, attribs)
 			xx = createTiddlyElement(place, 'div', null, 'stackLeft');
 			xx = createTiddlyElement(xx, 'div', null, 'stackRight');
 			xx = createTiddlyElement(xx, 'div', null, 'stackNormal');
@@ -149,8 +149,8 @@ version.extensions.FancyBox = {
 			var text;
 			var offName, title = cName;
 
-			var pos = title.indexOf(config.textPrimitives.sectionSeparator);
 			var section = null;
+			var pos = title.indexOf(config.textPrimitives.sectionSeparator);
 			if (pos != -1) {
 				section = title.substr(pos + config.textPrimitives.sectionSeparator.length);
 				title = title.substr(0, pos);
@@ -170,6 +170,7 @@ version.extensions.FancyBox = {
 				settings = me.calcTextSlices(text);
 				//	console.log({'settings':settings});
 			}
+			// some special handling, due to jQuery.fancybox() library structure.
 			if (settings.swf) {
 				settings.swf = $.parseJSON(settings.swf);
 			}
@@ -177,38 +178,18 @@ version.extensions.FancyBox = {
 				settings.href = settings.href.replace(/youtube.com\/watch\?v=/i, 'youtube.com/v/');
 			}
 
+			var p = ['onComplete', 'onStart', 'onCancel', 'onCleanup', 'onClosed', 'titleFormat'];
 			var cmfa = config.macros.fancyBox.addOns;
-			var x = settings.onComplete;
-			if (x) {
-				settings.onComplete = (cmfa[x]) ? cmfa[x] : null;
+
+			var x;
+			for (var i = 0, im = p.length; i<im; i += 1) {
+				x = settings[p[i]];
+				if (x) {
+					settings[p[i]] = (cmfa[x]) ? cmfa[x] : null;
+				}
 			}
 
-			x = settings.onStart;
-			if (x) {
-				settings.onStart = (cmfa[x]) ? cmfa[x] : null;
-			}
-
-			x = settings.onCancel;
-			if (x) {
-				settings.onCancel = (cmfa[x]) ? cmfa[x] : null;
-			}
-
-			x = settings.onCleanup;
-			if (x) {
-				settings.onCleanup = (cmfa[x]) ? cmfa[x] : null;
-			}
-
-			x = settings.onClosed;
-			if (x) {
-				settings.onClosed = (cmfa[x]) ? cmfa[x] : null;
-			}
-
-			x = settings.titleFormat;
-			if (x) {
-				settings.titleFormat = (cmfa[x]) ? cmfa[x] : null;
-			}
-
-			//			console.log('settings: ', settings, 'x:', x);
+			console.log('settings: ', settings, 'x:', x);
 			return settings;
 		},
 
@@ -450,7 +431,7 @@ version.extensions.FancyBox = {
 			switch (data.mode) {
 
 			case 'imageStack':
-				if ($.support.cssProperty('transform')) {place = me.createStack();};
+				if ($.support.cssProperty('transform')) {place = me.createStack();}
 				txtImageButton = txtImageStack;
 				// console.log('imageStack:', place);
 				// fall through is by intention
