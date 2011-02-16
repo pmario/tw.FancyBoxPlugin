@@ -75,34 +75,27 @@ version.extensions.FancyBox = {
 			txtDefaultMode: 'slide' // do not translate
 		},
 
+		getPictureInfo: function(title, opts) {
+			var picURI;
+			picURI = (opts.thumbHost) ? opts.thumbHost + title : '';
+
+			if (!picURI) {
+				picURI = (config.macros.attach) ? config.macros.attach.getAttachment(title) : title;
+			}
+			return picURI;	
+		},
+				
 		setFbAdvanced: function (conf, params) {
 			// set the fancyBox advanced options
-			var type = getParam(params, 'type', undefined); // Forces content type. Can be set to 'image', 'ajax', 'iframe', 'swf' or 'inline'
-			var href = getParam(params, 'href', undefined); // Forces content source
-			var title = getParam(params, 'title', undefined); // Forces title
-			var content = getParam(params, 'content', undefined); // Forces content (can be any html data)
-			var orig = getParam(params, 'orig', undefined); // Sets object whos position and dimensions will be used by 'elastic' transition
-			var index = getParam(params, 'index', undefined); // Custom start index of manually created gallery (since 1.3.1)
-			// Set the params only if available
-			if (type) {
-				conf.type = type;
-			}
-			if (href) {
-				conf.href = href;
-			}
-			if (title) {
-				conf.title = title;
-			}
-			if (content) {
-				conf.content = content;
-			}
-			if (orig) {
-				conf.orig = orig;
-			}
-			if (index) {
-				conf.index = index;
+			p = ['type', 'href', 'title', 'content', 'orig', 'index'];
+			
+			var tmp; 
+			for (var i=0, im = p.length; i<im; i += 1) {
+				tmp = getParam( params, p[i], undefined);
+				if (tmp) conf[p[i]] = tmp; 
 			}
 
+			// console.log({'conf':conf});
 			return conf;
 		},
 
