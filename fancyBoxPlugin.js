@@ -2,7 +2,7 @@
 |''Name''|FancyBoxPlugin|
 |''Description''|Wraps the jQuery.fancybox() function into a TiddlyWiki friendly macro|
 |''Author''|PMario|
-|''Version''|0.4.6|
+|''Version''|0.4.7|
 |''Status''|''beta''|
 |''Source''|http://fancybox-plugin.tiddlyspace.com/|
 |''License''|http://www.opensource.org/licenses/mit-license.php|
@@ -22,7 +22,7 @@ The default mode is "slides". If there are several pictures in one tiddler and y
 <<fancyBox>>
 }}}
 If you add the {{{mode:picture}}} parameter it will open the lightbox in single picture mode.
-{{
+{{{
 <<fancyBox mode:picture>>
 }}}
 
@@ -54,8 +54,8 @@ see: http://fancybox.net/api
 version.extensions.FancyBox = {
 	major: 0,
 	minor: 4,
-	revision: 5,
-	date: new Date(2011, 2, 16)
+	revision: 7,
+	date: new Date(2011, 2, 17)
 };
 
 (function ($) {
@@ -193,7 +193,7 @@ version.extensions.FancyBox = {
 				}
 			}
 
-			console.log('settings: ', settings, 'x:', x);
+			// console.log('settings: ', settings, 'x:', x);
 			return settings;
 		},
 
@@ -225,7 +225,7 @@ version.extensions.FancyBox = {
 					thumbURI = cma.getAttachment(list[i].title);
 					picURI = (data.conf.href) ? data.conf.href : (slide) ? cma.getAttachment(slide.trim()) : thumbURI;
 
-					if (!slide && !data.conf.href) {
+					if (!slide && !data.conf.href && !data.picHost) {
 						list[i].label = me.locale.txtSlideRefMissing.format([list[i].title]);
 					}
 
@@ -247,7 +247,8 @@ version.extensions.FancyBox = {
 			}
 			return data;
 		},
-		// End slide
+
+		// click Event
 		buttonSlideShow: function () {
 			var data = $(this).data('data');
 			var index = data.conf.index || 0;
@@ -298,7 +299,7 @@ version.extensions.FancyBox = {
 				list[i].label = (list[i].label) ? list[i].label : (fbTitle) ? fbTitle : ''; 
 				list[i].fbInfo = fbInfo;
 			}
-			// console.log({'rdSlideInfo.list':list});
+			console.log({'rdSlideInfo.list':list});
 			return list;
 		},
 		
@@ -432,11 +433,11 @@ version.extensions.FancyBox = {
 				break; // 'list'
 			}
 
-			// console.log({'data':data});
+			console.log({'data':data});
 			switch (data.mode) {
 
 			case 'imageStack':
-				if ($.support.cssProperty('transform')) {place = me.createStack();}
+				if ($.browser.mozilla || $.browser.webkit) {place = me.createStack();}
 				txtImageButton = txtImageStack;
 				// console.log('imageStack:', place);
 				// fall through is by intention
