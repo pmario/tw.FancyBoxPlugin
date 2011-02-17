@@ -299,7 +299,7 @@ version.extensions.FancyBox = {
 				list[i].label = (list[i].label) ? list[i].label : (fbTitle) ? fbTitle : ''; 
 				list[i].fbInfo = fbInfo;
 			}
-			console.log({'rdSlideInfo.list':list});
+			// console.log({'rdSlideInfo.list':list});
 			return list;
 		},
 		
@@ -433,7 +433,7 @@ version.extensions.FancyBox = {
 				break; // 'list'
 			}
 
-			console.log({'data':data});
+			// console.log({'data':data});
 			switch (data.mode) {
 
 			case 'imageStack':
