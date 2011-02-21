@@ -2,7 +2,7 @@
 |''Name''|FancyBoxPlugin|
 |''Description''|Wraps the jQuery.fancybox() function into a TiddlyWiki friendly macro|
 |''Author''|PMario|
-|''Version''|0.4.9|
+|''Version''|0.4.11|
 |''Status''|''beta''|
 |''Source''|http://fancybox-plugin.tiddlyspace.com/|
 |''License''|http://www.opensource.org/licenses/mit-license.php|
@@ -54,7 +54,7 @@ see: http://fancybox.net/api
 version.extensions.FancyBox = {
 	major: 0,
 	minor: 4,
-	revision: 9,
+	revision: 11,
 	date: new Date(2011, 2, 21)
 };
 
@@ -75,9 +75,9 @@ version.extensions.FancyBox = {
 			txtDefaultMode: 'slide' // do not translate
 		},
 
-		getPictureInfo: function(title, opts) {
+		getPictureInfo: function(title, opts, elem) {
 			var picURI;
-			picURI = (opts.thumbHost) ? opts.thumbHost + title : '';
+			picURI = (opts[elem]) ? opts[elem] + title : '';
 
 			if (!picURI) {
 				picURI = (config.macros.attach) ? config.macros.attach.getAttachment(title) : title;
@@ -101,6 +101,7 @@ version.extensions.FancyBox = {
 
 		createElement: function (tagName, thumbURI, picURI, label, relId, alt, data) {
 			picURI = picURI.replace(/ /g, '%20');
+			thumbURI = thumbURI.replace(/ /g, '%20');
 			return '<span class="twfb-list twfb-' + tagName + '">' + 
 						'<a class="imageLink" rel="' + relId + '" href=' + picURI + '>' + 
 							'<img title="' + label + '" alt="' + alt + '" src="' + thumbURI + '" />' + 
@@ -220,11 +221,18 @@ version.extensions.FancyBox = {
 
 			var i, im;
 			// if picHost is not defined check for info from attachment
+console.log('data', data);
 			if (!data.picHost && cma.getAttachment) {
 				for (i = 0, im = list.length; i < im; i += 1) {
 					slide = store.getTiddlerText(list[i].title + '##slide');
-
-					thumbURI = cma.getAttachment(list[i].title);
+					
+					// check for slide field 
+					if (!slide) {
+						slide = (list[i].fields['slide'])? list[i].fields['slide'] : '';
+console.log({'slide': slide}, {'list': list});
+					} 
+						
+					thumbURI = me.getPictureInfo(list[i].title, data, 'thumbHost');
 					picURI = (data.conf.href) ? data.conf.href : (slide) ? cma.getAttachment(slide.trim()) : thumbURI;
 
 					if (!slide && !data.conf.href && !data.picHost) {
@@ -286,19 +294,29 @@ version.extensions.FancyBox = {
 		},
 
 		rdSlideInfo: function (list, data){
-			var fbTitle, fbInfo = '';
+			var fbLabel, fbInfo = '';
 			
 			for ( var i=0; i<list.length; i += 1 ) {
 				if (data.titleSection) {
-					fbTitle = store.getTiddlerText(list[i].title + '##' + data.titleSection);
-					fbTitle = (fbTitle) ? fbTitle.trim() : '';
+					fbLabel = store.getTiddlerText(list[i].title + '##' + data.titleSection);
+					fbLabel = (fbLabel) ? fbLabel.trim() : '';
+					
+					if (!fbLabel) {
+						fbLabel = (list[i].fields[data.titleSection])? list[i].fields[data.titleSection] : '';
+console.log('fbLabel', fbLabel, 'fields: ', list[i].fields);
+					}
 				}
 				if (data.infoSection) {
 					fbInfo = store.getTiddlerText(list[i].title + '##' + data.infoSection);
 					fbInfo = (fbInfo)? fbInfo.trim():'';
+
+					if (!fbInfo) {
+						fbLabel = (list[i].fields[data.titleSection.toLowerCase()])? list[i].fields[data.titleSection.toLowerCase()] : '';
+console.log('fbInfo', fbInfo, 'fields: ', list[i].fields);
+					}
 				}
 
-				list[i].label = (list[i].label) ? list[i].label : (fbTitle) ? fbTitle : ''; 
+				list[i].label = (list[i].label) ? list[i].label : (fbLabel) ? fbLabel : ''; 
 				list[i].fbInfo = fbInfo;
 			}
 			// console.log({'rdSlideInfo.list':list});
@@ -410,7 +428,7 @@ version.extensions.FancyBox = {
 			var genId = me.idGenerator();
 			data.genIdA = 'A' + genId.substr(1, 6);
 
-			var tlist, xlist;
+			var tlist, xlist, tid;
 			switch (data.src) {
 			case 'tag':
 				tlist = store.getTaggedTiddlers(data.tagName, data.sortField);
@@ -420,10 +438,11 @@ version.extensions.FancyBox = {
 			case 'pictureLink':
 				tlist = [];
 				for (var i = 0; i < pictureLink.length; i += 1) {
-					tlist.push({
-						'title': pictureLink[i]
-					});
-					tlist[i].label = (label && label[i]) ? label[i] : '';
+					tid = store.getTiddler( pictureLink[i]);
+					if (tid) {
+						tlist.push(tid);
+						tlist[i].label = (label && label[i]) ? label[i] : '';
+					}
 				}
 
 				tlist = me.rdSlideInfo(tlist,data);
