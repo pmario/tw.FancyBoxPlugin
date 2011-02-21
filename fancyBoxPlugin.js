@@ -2,7 +2,7 @@
 |''Name''|FancyBoxPlugin|
 |''Description''|Wraps the jQuery.fancybox() function into a TiddlyWiki friendly macro|
 |''Author''|PMario|
-|''Version''|0.4.7|
+|''Version''|0.4.9|
 |''Status''|''beta''|
 |''Source''|http://fancybox-plugin.tiddlyspace.com/|
 |''License''|http://www.opensource.org/licenses/mit-license.php|
@@ -54,8 +54,8 @@ see: http://fancybox.net/api
 version.extensions.FancyBox = {
 	major: 0,
 	minor: 4,
-	revision: 7,
-	date: new Date(2011, 2, 17)
+	revision: 9,
+	date: new Date(2011, 2, 21)
 };
 
 (function ($) {
@@ -100,6 +100,7 @@ version.extensions.FancyBox = {
 		},
 
 		createElement: function (tagName, thumbURI, picURI, label, relId, alt, data) {
+			picURI = picURI.replace(/ /g, '%20');
 			return '<span class="twfb-list twfb-' + tagName + '">' + 
 						'<a class="imageLink" rel="' + relId + '" href=' + picURI + '>' + 
 							'<img title="' + label + '" alt="' + alt + '" src="' + thumbURI + '" />' + 
@@ -133,14 +134,14 @@ version.extensions.FancyBox = {
 						slices[m[2]] = (m[3] in helper) ? helper[m[3]] : m[3];
 					}
 					else {
-						slices[m[2]] = parseInt(m[3]);
+						slices[m[2]] = parseFloat(m[3]);
 					}
 				} else {
 					if (isNaN(m[6])) {
 						slices[m[5]] = (m[6] in helper) ? helper[m[6]] : m[6];
 					}
 					else {
-						slices[m[5]] = parseInt(m[6]);
+						slices[m[5]] = parseFloat(m[6]);
 					}
 				}
 				m = store.slicesRE.exec(text);
@@ -180,6 +181,7 @@ version.extensions.FancyBox = {
 			}
 			if (settings.href) {
 				settings.href = settings.href.replace(/youtube.com\/watch\?v=/i, 'youtube.com/v/');
+				settings.href = settings.href.replace(/ /g, '%20');
 			}
 
 			var p = ['onComplete', 'onStart', 'onCancel', 'onCleanup', 'onClosed', 'titleFormat'];
@@ -189,7 +191,7 @@ version.extensions.FancyBox = {
 			for (var i = 0, im = p.length; i<im; i += 1) {
 				x = settings[p[i]];
 				if (x) {
-					settings[p[i]] = (cmfa[x]) ? cmfa[x] : null;
+					settings[p[i]] = (cmfa && cmfa[x]) ? cmfa[x] : null;
 				}
 			}
 
