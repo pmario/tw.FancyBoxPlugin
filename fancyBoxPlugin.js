@@ -209,7 +209,7 @@ version.extensions.FancyBox = {
 			data.selector = '#' + data.genIdA + ' a.imageLink';
 
 			// createTiddlyElement(parent, element, id, className, text, attribs)
-			var listElem = createTiddlyElement(place, 'div', data.genIdA, 'imgStack');
+			var listElem = createTiddlyElement(place, 'span', data.genIdA, 'imgStack');
 
 			if (data.hide) {
 				$(listElem).hide();
@@ -297,12 +297,12 @@ console.log({'slide': slide}, {'list': list});
 			var fbLabel, fbInfo = '';
 			
 			for ( var i=0; i<list.length; i += 1 ) {
-				if (data.titleSection) {
-					fbLabel = store.getTiddlerText(list[i].title + '##' + data.titleSection);
+				if (data.labelSection) {
+					fbLabel = store.getTiddlerText(list[i].title + '##' + data.labelSection);
 					fbLabel = (fbLabel) ? fbLabel.trim() : '';
 					
 					if (!fbLabel) {
-						fbLabel = (list[i].fields[data.titleSection])? list[i].fields[data.titleSection] : '';
+						fbLabel = (list[i].fields[data.labelSection])? list[i].fields[data.labelSection] : '';
 console.log('fbLabel', fbLabel, 'fields: ', list[i].fields);
 					}
 				}
@@ -311,7 +311,7 @@ console.log('fbLabel', fbLabel, 'fields: ', list[i].fields);
 					fbInfo = (fbInfo)? fbInfo.trim():'';
 
 					if (!fbInfo) {
-						fbLabel = (list[i].fields[data.titleSection.toLowerCase()])? list[i].fields[data.titleSection.toLowerCase()] : '';
+						fbLabel = (list[i].fields[data.labelSection.toLowerCase()])? list[i].fields[data.labelSection.toLowerCase()] : '';
 console.log('fbInfo', fbInfo, 'fields: ', list[i].fields);
 					}
 				}
@@ -393,10 +393,10 @@ console.log('fbInfo', fbInfo, 'fields: ', list[i].fields);
 				data.tagName = tagName;
 			}
 
-			// titleSection .. references the given sections to be used as the picture title
+			// labelSection .. references the given sections to be used as the picture title
 			// only overwritten by named param title.
-			var titleSection = getParam(params, 'titleSection', undefined);
-			data.titleSection = (titleSection) ? titleSection : (data.conf.titleSection)? data.conf.titleSection : '';
+			var labelSection = getParam(params, 'labelSection', undefined);
+			data.labelSection = (labelSection) ? labelSection : (data.conf.labelSection)? data.conf.labelSection : '';
 
 			// docuSection .. references the given section to be used as the picture info, displayed with special titles
 			var infoSection = getParam(params, 'infoSection', undefined);
