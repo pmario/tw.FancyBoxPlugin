@@ -202,7 +202,7 @@ version.extensions.FancyBox = {
 
 		// creates a fancybox friendly DOM structure
 		thumbList: function (list, data) {
-			var label, slide, elem, thumbURI, picURI, alt = '';
+			var label, slide, elem, thumbURI, picURI;
 			var relId = '';
 			var cma = (config.macros.attach) ? config.macros.attach : null;
 
@@ -221,27 +221,22 @@ version.extensions.FancyBox = {
 
 			var i, im;
 			// if picHost is not defined check for info from attachment
-console.log('data', data);
 			if (!data.picHost && cma.getAttachment) {
 				for (i = 0, im = list.length; i < im; i += 1) {
 					slide = store.getTiddlerText(list[i].title + '##slide');
 					
 					// check for slide field 
 					if (!slide) {
-						slide = (list[i].fields['slide'])? list[i].fields['slide'] : '';
-console.log({'slide': slide}, {'list': list});
+						slide = (list[i].fields.slide)? list[i].fields.slide : '';
+						// console.log({'slide': slide}, {'list': list});
 					} 
 						
 					thumbURI = me.getPictureInfo(list[i].title, data, 'thumbHost');
 					picURI = (data.conf.href) ? data.conf.href : (slide) ? cma.getAttachment(slide.trim()) : thumbURI;
 
-					if (!slide && !data.conf.href && !data.picHost) {
-						list[i].label = me.locale.txtSlideRefMissing.format([list[i].title]);
-					}
-
-					label = (list[i].label) ? list[i].label : '';
-					alt = (alt) ? alt : label;
-					elem = this.createElement(data.tagName, thumbURI, picURI, label, relId, alt);
+					label = (data.list[i].label) ? data.list[i].label : '';
+					// console.log('thumbList !picHost', 'list', list[i], 'label: ', label);
+					elem = this.createElement(data.tagName, thumbURI, picURI, label, relId, label);
 					jQuery(elem).appendTo($(listElem)[0]);				
 				}
 			}
@@ -250,12 +245,12 @@ console.log({'slide': slide}, {'list': list});
 					thumbURI = (data.thumbHost) ? data.thumbHost + list[i].title : list[i].title;
 					picURI = (data.conf.href) ? data.conf.href : (data.picHost) ? data.picHost + list[i].title : list[i].title;
 
-					label = (list[i].label) ? list[i].label : '';
-					alt = (alt) ? alt : label;
-					elem = this.createElement(data.tagName, thumbURI, picURI, label, relId, alt);
+					label = (data.list[i].label) ? data.list[i].label : '';
+					// console.log('thumbList else', 'list', list[i], 'label: ', label);
+					elem = this.createElement(data.tagName, thumbURI, picURI, label, relId, label);
 					jQuery(elem).appendTo($(listElem)[0]);				}
 			}
-			return data;
+			// return data;
 		},
 
 		// click Event
@@ -274,7 +269,9 @@ console.log({'slide': slide}, {'list': list});
 
 		activateBox: function (data) {
 			$(data.selector).each(function (index, element) {
-				$(this).attr('title', $(element).children('img').attr('title'));
+				// if (! $(this).attr('title')) {
+					$(this).attr('title', $(element).children('img').attr('title'));
+				// } 
 			});
 
 			if (['picture', 'pictureLink'].contains(data.mode)) {
@@ -294,40 +291,62 @@ console.log({'slide': slide}, {'list': list});
 		},
 
 		rdSlideInfo: function (list, data){
+			var co = config.options;
 			var fbLabel, fbInfo = '';
+			var lit, tmpLabel;
+
+			var titleRegexp;
+			var match; 
 			
 			for ( var i=0; i<list.length; i += 1 ) {
+				fbLabel = '';
+				// using the tiddler title as slideshow title is default behaviour
+				// If one doesn't want it set useTiddlerTitle to false
+				// cutExtension is default true 
+				lit = list[i].title;
+				if (data.useTiddlerTitle) {
+					titleRegexp = /^(.*)\./mg;		// ToDo check why it needs new init ?!?!
+					match = titleRegexp.exec(lit);
+					
+					tmpLabel = (data.cutExtension && (match!==null)) ? match[1] : lit;
+					
+				//  console.log('rdSlideInfo', {'list':list[i]}, {'tmpLabel':tmpLabel}) ;// , 'match',match, 'titleRegexp', titleRegexp);						
+				}
+
 				if (data.labelSection) {
 					fbLabel = store.getTiddlerText(list[i].title + '##' + data.labelSection);
-					fbLabel = (fbLabel) ? fbLabel.trim() : '';
+					fbLabel = (fbLabel) ? fbLabel : '';
 					
 					if (!fbLabel) {
 						fbLabel = (list[i].fields[data.labelSection])? list[i].fields[data.labelSection] : '';
-console.log('fbLabel', fbLabel, 'fields: ', list[i].fields);
 					}
+				//  console.log('fbLabel', fbLabel, 'fields: ', list[i].fields);
 				}
 				if (data.infoSection) {
-					fbInfo = store.getTiddlerText(list[i].title + '##' + data.infoSection);
-					fbInfo = (fbInfo)? fbInfo.trim():'';
+					fbInfo = store.getTiddlerText(lit + '##' + data.infoSection);
+					fbInfo = (fbInfo)? fbInfo : '';
 
 					if (!fbInfo) {
-						fbLabel = (list[i].fields[data.labelSection.toLowerCase()])? list[i].fields[data.labelSection.toLowerCase()] : '';
-console.log('fbInfo', fbInfo, 'fields: ', list[i].fields);
+						fbInfo = (list[i].fields[data.infoSection.toLowerCase()])? list[i].fields[data.infoSection.toLowerCase()] : '';
 					}
+				//  console.log('fbInfo', fbInfo, 'fields: ', list[i].fields);
 				}
 
-				list[i].label = (list[i].label) ? list[i].label : (fbLabel) ? fbLabel : ''; 
-				list[i].fbInfo = fbInfo;
-			}
-			// console.log({'rdSlideInfo.list':list});
-			return list;
+				// console.log('rdSlideInfo.list','l.l', data.list[i].label, 'fb:', fbLabel, 'tmp',tmpLabel, {'data':data});
+				
+				tmpLabel = (data.list[i].label) ? data.list[i].label : (fbLabel) ? fbLabel : tmpLabel
+				data.list[i].label = tmpLabel;
+				data.list[i].fbInfo = fbInfo;
+			} // for
 		},
 		
 		handler: function (place, macroName, params, wikifier, paramString, tiddler) {
 			params = paramString.parseParams('pictureLink', null, true);
 
-			var conf = {}; // everything, that comes from fancyBox library
-			var data = {}; // fancxBox TW data + conf
+			var conf = {}; // everything, that comes from Defaults or Fancy sections
+			var data = {}; // data that will be used to decide
+			data.list = []; // contains the label information
+
 			var btn;
 
 			data.mode = me.fix.txtDefaultMode;
@@ -369,6 +388,15 @@ console.log('fbInfo', fbInfo, 'fields: ', list[i].fields);
 			// set advanced params from macro params
 			data.conf = me.setFbAdvanced(conf, params);
 
+			// console.log({'data':data});
+			// tiddler title is used as picture label by default
+			var useTiddlerTitle = getParam(params, 'useTiddlerTitle', undefined);
+			data.useTiddlerTitle = (useTiddlerTitle) ? useTiddlerTitle : (data.conf.useTiddlerTitle === false)? false : true;
+						
+			// if tiddler title contains an extension eg. 01.jpg ".jpg" will be cut off.
+			var cutExtension = getParam(params, 'cutExtension', undefined);
+			data.cutExtension = (cutExtension) ? cutExtension : (data.conf.cutExtension===false)? false : true;
+
 			// set the selector
 			var selector = getParam(params, 'selector', undefined);
 			if (selector) {
@@ -396,11 +424,11 @@ console.log('fbInfo', fbInfo, 'fields: ', list[i].fields);
 			// labelSection .. references the given sections to be used as the picture title
 			// only overwritten by named param title.
 			var labelSection = getParam(params, 'labelSection', undefined);
-			data.labelSection = (labelSection) ? labelSection : (data.conf.labelSection)? data.conf.labelSection : '';
+			data.labelSection = (labelSection) ? labelSection : (data.conf.labelSection)? data.conf.labelSection : 'label';
 
 			// docuSection .. references the given section to be used as the picture info, displayed with special titles
 			var infoSection = getParam(params, 'infoSection', undefined);
-			data.infoSection = (infoSection) ? infoSection : (data.conf.infoSection)? data.conf.infoSection : '';
+			data.infoSection = (infoSection) ? infoSection : (data.conf.infoSection)? data.conf.infoSection : 'info';
 
 			// set slideShow like: SlideShowExample
 			var txtImageButton = getParam(params, 'imageButton', undefined);
@@ -428,25 +456,31 @@ console.log('fbInfo', fbInfo, 'fields: ', list[i].fields);
 			var genId = me.idGenerator();
 			data.genIdA = 'A' + genId.substr(1, 6);
 
-			var tlist, xlist, tid;
+			var tlist, tid;
 			switch (data.src) {
 			case 'tag':
 				tlist = store.getTaggedTiddlers(data.tagName, data.sortField);
-				xlist = me.rdSlideInfo(tlist, data);
-				data = me.thumbList( xlist, data);
+
+				for (var i = 0; i < tlist.length; i += 1) {
+					data.list[i] = {'label':''};
+				}
+
+				me.rdSlideInfo( tlist, data);				
+				me.thumbList( tlist, data);
 				break; // 'tag'
 			case 'pictureLink':
 				tlist = [];
-				for (var i = 0; i < pictureLink.length; i += 1) {
+				for (i = 0; i < pictureLink.length; i += 1) {
 					tid = store.getTiddler( pictureLink[i]);
 					if (tid) {
 						tlist.push(tid);
-						tlist[i].label = (label && label[i]) ? label[i] : '';
+						data.list[i] = {'label': (label && label[i]) ? label[i] : ''};
+					// console.log('dp: ', 'label:', label);						
 					}
 				}
-
-				tlist = me.rdSlideInfo(tlist,data);
-				data = me.thumbList(tlist, data);
+								
+				me.rdSlideInfo(tlist,data);
+				me.thumbList(tlist, data);
 				break; // 'tag'
 			case 'list':
 				// get the list of [img[prettyLink|pic][externalLink]]
