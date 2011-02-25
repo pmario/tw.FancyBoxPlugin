@@ -2,7 +2,7 @@
 |''Name''|FancyBoxPlugin|
 |''Description''|Wraps the jQuery.fancybox() function into a TiddlyWiki friendly macro|
 |''Author''|PMario|
-|''Version''|0.4.11|
+|''Version''|0.4.12|
 |''Status''|''beta''|
 |''Source''|http://fancybox-plugin.tiddlyspace.com/|
 |''License''|http://www.opensource.org/licenses/mit-license.php|
@@ -54,8 +54,8 @@ see: http://fancybox.net/api
 version.extensions.FancyBox = {
 	major: 0,
 	minor: 4,
-	revision: 11,
-	date: new Date(2011, 2, 21)
+	revision: 12,
+	date: new Date(2011, 2, 25)
 };
 
 (function ($) {
@@ -77,10 +77,10 @@ version.extensions.FancyBox = {
 
 		getPictureInfo: function(title, opts, elem) {
 			var picURI;
-			picURI = (opts[elem]) ? opts[elem] + title : '';
+			picURI = (opts[elem]) ? opts[elem] + encodeURIComponent(title) : '';
 
 			if (!picURI) {
-				picURI = (config.macros.attach) ? config.macros.attach.getAttachment(title) : title;
+				picURI = (config.macros.attach) ? config.macros.attach.getAttachment(title) : encodeURIComponent(title);
 			}
 			return picURI;	
 		},
@@ -100,8 +100,7 @@ version.extensions.FancyBox = {
 		},
 
 		createElement: function (tagName, thumbURI, picURI, label, relId, alt, data) {
-			picURI = picURI.replace(/ /g, '%20');
-			thumbURI = thumbURI.replace(/ /g, '%20');
+			console.log({'picURI':picURI, 'thumbURI':thumbURI});
 			return '<span class="twfb-list twfb-' + tagName + '">' + 
 						'<a class="imageLink" rel="' + relId + '" href=' + picURI + '>' + 
 							'<img title="' + label + '" alt="' + alt + '" src="' + thumbURI + '" />' + 
@@ -242,8 +241,8 @@ version.extensions.FancyBox = {
 			}
 			else {
 				for (i = 0, im = list.length; i < im; i += 1) {
-					thumbURI = (data.thumbHost) ? data.thumbHost + list[i].title : list[i].title;
-					picURI = (data.conf.href) ? data.conf.href : (data.picHost) ? data.picHost + list[i].title : list[i].title;
+					thumbURI = (data.thumbHost) ? data.thumbHost + encodeURIComponent(list[i].title) : encodeURIComponent(list[i].title);
+					picURI = (data.conf.href) ? data.conf.href : (data.picHost) ? data.picHost + encodeURIComponent(list[i].title) : encodeURIComponent(list[i].title);
 
 					label = (data.list[i].label) ? data.list[i].label : '';
 					// console.log('thumbList else', 'list', list[i], 'label: ', label);
@@ -334,7 +333,7 @@ version.extensions.FancyBox = {
 
 				// console.log('rdSlideInfo.list','l.l', data.list[i].label, 'fb:', fbLabel, 'tmp',tmpLabel, {'data':data});
 				
-				tmpLabel = (data.list[i].label) ? data.list[i].label : (fbLabel) ? fbLabel : tmpLabel
+				tmpLabel = (data.list[i].label) ? data.list[i].label : (fbLabel) ? fbLabel : tmpLabel;
 				data.list[i].label = tmpLabel;
 				data.list[i].fbInfo = fbInfo;
 			} // for
