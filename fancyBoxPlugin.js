@@ -2,7 +2,7 @@
 |''Name''|FancyBoxPlugin|
 |''Description''|Wraps the jQuery.fancybox() function into a TiddlyWiki friendly macro|
 |''Author''|PMario|
-|''Version''|0.4.12|
+|''Version''|0.4.13|
 |''Status''|''beta''|
 |''Source''|http://fancybox-plugin.tiddlyspace.com/|
 |''License''|http://www.opensource.org/licenses/mit-license.php|
@@ -54,8 +54,8 @@ see: http://fancybox.net/api
 version.extensions.FancyBox = {
 	major: 0,
 	minor: 4,
-	revision: 12,
-	date: new Date(2011, 2, 25)
+	revision: 13,
+	date: new Date(2011, 2, 26)
 };
 
 (function ($) {
@@ -64,15 +64,6 @@ version.extensions.FancyBox = {
 	config.macros.fancyBox = me = {
 		// should be done for easy localisation
 		locale: {
-			txtNoConfigTiddler: "%0: configuration tiddler doesn't exist",
-			slideShowParamMissing: "fancyBox: slideShow parameter missing. See documentation!",
-			buttonParamMissing: "fancyBox: button parameter missing. See documentation!",
-			slideShowConfigMissing: "fancyBox: SlideShow configuration tiddler missing or wrong name!",
-			txtSlideRefMissing: 'Slide reference in [[%0]] is missing'
-		},
-
-		fix: {
-			txtDefaultMode: 'slide' // do not translate
 		},
 
 		getPictureInfo: function(title, opts, elem) {
@@ -94,14 +85,11 @@ version.extensions.FancyBox = {
 				tmp = getParam( params, p[i], undefined);
 				if (tmp) {conf[p[i]] = tmp;} 
 			}
-
-			// console.log({'conf':conf});
-			return conf;
+//			return conf;
 		},
 
-		createElement: function (tagName, thumbURI, picURI, label, relId, alt, data) {
-			console.log({'picURI':picURI, 'thumbURI':thumbURI});
-			return '<span class="twfb-list twfb-' + tagName + '">' + 
+		createElement: function (tag, thumbURI, picURI, label, relId, alt, data) {
+			return '<span class="twfb-list twfb-' + tag + '">' + 
 						'<a class="imageLink" rel="' + relId + '" href=' + picURI + '>' + 
 							'<img title="' + label + '" alt="' + alt + '" src="' + thumbURI + '" />' + 
 						'</a>' + 
@@ -117,28 +105,28 @@ version.extensions.FancyBox = {
 			return xx;
 		},
 
+		helper : {
+			'true': true,
+			'false': false,
+			'null': null
+		},
+
 		calcTextSlices: function (text) {
 			var slices = {};
-
-			var helper = {
-				'true': true,
-				'false': false,
-				'null': null
-			};
 
 			store.slicesRE.lastIndex = 0;
 			var m = store.slicesRE.exec(text);
 			while (m) {
 				if (m[2]) {
 					if (isNaN(m[3])) {
-						slices[m[2]] = (m[3] in helper) ? helper[m[3]] : m[3];
+						slices[m[2]] = (m[3] in me.helper) ? me.helper[m[3]] : m[3];
 					}
 					else {
 						slices[m[2]] = parseFloat(m[3]);
 					}
 				} else {
 					if (isNaN(m[6])) {
-						slices[m[5]] = (m[6] in helper) ? helper[m[6]] : m[6];
+						slices[m[5]] = (m[6] in me.helper) ? me.helper[m[6]] : m[6];
 					}
 					else {
 						slices[m[5]] = parseFloat(m[6]);
@@ -169,19 +157,17 @@ version.extensions.FancyBox = {
 			if (store.tiddlerExists(title)) {
 				// read Offline config if offline
 				if (offline) {text = store.getTiddlerText(offName);}
-				//	console.log({'cName':cName, 'offName':offName, 'text':text});
 				// if there is no offline section use the defaults section
 				text = (text) ? text : store.getTiddlerText(cName);
 				settings = me.calcTextSlices(text);
-				//	console.log({'settings':settings});
 			}
+
 			// some special handling, due to jQuery.fancybox() library structure.
 			if (settings.swf) {
 				settings.swf = $.parseJSON(settings.swf);
 			}
 			if (settings.href) {
 				settings.href = settings.href.replace(/youtube.com\/watch\?v=/i, 'youtube.com/v/');
-				settings.href = settings.href.replace(/ /g, '%20');
 			}
 
 			var p = ['onComplete', 'onStart', 'onCancel', 'onCleanup', 'onClosed', 'titleFormat'];
@@ -194,8 +180,6 @@ version.extensions.FancyBox = {
 					settings[p[i]] = (cmfa && cmfa[x]) ? cmfa[x] : null;
 				}
 			}
-
-			// console.log('settings: ', settings, 'x:', x);
 			return settings;
 		},
 
@@ -214,7 +198,7 @@ version.extensions.FancyBox = {
 				$(listElem).hide();
 			}
 
-			if (['slide', 'pictureLinkSlide'].contains(data.mode)) {
+			if (data.mode != 'picture') {
 				relId = data.genIdA;
 			}
 
@@ -227,15 +211,13 @@ version.extensions.FancyBox = {
 					// check for slide field 
 					if (!slide) {
 						slide = (list[i].fields.slide)? list[i].fields.slide : '';
-						// console.log({'slide': slide}, {'list': list});
 					} 
 						
 					thumbURI = me.getPictureInfo(list[i].title, data, 'thumbHost');
 					picURI = (data.conf.href) ? data.conf.href : (slide) ? cma.getAttachment(slide.trim()) : thumbURI;
 
 					label = (data.list[i].label) ? data.list[i].label : '';
-					// console.log('thumbList !picHost', 'list', list[i], 'label: ', label);
-					elem = this.createElement(data.tagName, thumbURI, picURI, label, relId, label);
+					elem = this.createElement(data.tag, thumbURI, picURI, label, relId, label);
 					jQuery(elem).appendTo($(listElem)[0]);				
 				}
 			}
@@ -245,8 +227,7 @@ version.extensions.FancyBox = {
 					picURI = (data.conf.href) ? data.conf.href : (data.picHost) ? data.picHost + encodeURIComponent(list[i].title) : encodeURIComponent(list[i].title);
 
 					label = (data.list[i].label) ? data.list[i].label : '';
-					// console.log('thumbList else', 'list', list[i], 'label: ', label);
-					elem = this.createElement(data.tagName, thumbURI, picURI, label, relId, label);
+					elem = this.createElement(data.tag, thumbURI, picURI, label, relId, label);
 					jQuery(elem).appendTo($(listElem)[0]);				}
 			}
 			// return data;
@@ -258,7 +239,6 @@ version.extensions.FancyBox = {
 			var index = data.conf.index || 0;
 			var elems;
 
-			data.mode = 'manual';
 			elems = me.activateBox(data);
 
 			if (elems.length > index) {
@@ -273,7 +253,7 @@ version.extensions.FancyBox = {
 				// } 
 			});
 
-			if (['picture', 'pictureLink'].contains(data.mode)) {
+			if (['picture'].contains(data.mode)) {
 				return jQuery(data.selector).fancybox(data.conf);
 			}
 			else {
@@ -296,7 +276,7 @@ version.extensions.FancyBox = {
 
 			var titleRegexp;
 			var match; 
-			
+
 			for ( var i=0; i<list.length; i += 1 ) {
 				fbLabel = '';
 				// using the tiddler title as slideshow title is default behaviour
@@ -308,8 +288,6 @@ version.extensions.FancyBox = {
 					match = titleRegexp.exec(lit);
 					
 					tmpLabel = (data.cutExtension && (match!==null)) ? match[1] : lit;
-					
-				//  console.log('rdSlideInfo', {'list':list[i]}, {'tmpLabel':tmpLabel}) ;// , 'match',match, 'titleRegexp', titleRegexp);						
 				}
 
 				if (data.labelSection) {
@@ -319,7 +297,6 @@ version.extensions.FancyBox = {
 					if (!fbLabel) {
 						fbLabel = (list[i].fields[data.labelSection])? list[i].fields[data.labelSection] : '';
 					}
-				//  console.log('fbLabel', fbLabel, 'fields: ', list[i].fields);
 				}
 				if (data.infoSection) {
 					fbInfo = store.getTiddlerText(lit + '##' + data.infoSection);
@@ -328,37 +305,42 @@ version.extensions.FancyBox = {
 					if (!fbInfo) {
 						fbInfo = (list[i].fields[data.infoSection.toLowerCase()])? list[i].fields[data.infoSection.toLowerCase()] : '';
 					}
-				//  console.log('fbInfo', fbInfo, 'fields: ', list[i].fields);
 				}
-
-				// console.log('rdSlideInfo.list','l.l', data.list[i].label, 'fb:', fbLabel, 'tmp',tmpLabel, {'data':data});
-				
 				tmpLabel = (data.list[i].label) ? data.list[i].label : (fbLabel) ? fbLabel : tmpLabel;
 				data.list[i].label = tmpLabel;
 				data.list[i].fbInfo = fbInfo;
 			} // for
 		},
-		
+
+		defaults: {
+			display: 'slide',				// slide or picture
+			useTiddlerTitle: true,
+			cutExtension: true,
+			sortField: 'title',
+			labelSection: 'label',
+			infoSection: 'info'
+			
+		},
+
 		handler: function (place, macroName, params, wikifier, paramString, tiddler) {
 			params = paramString.parseParams('pictureLink', null, true);
 
-			var conf = {}; // everything, that comes from Defaults or Fancy sections
-			var data = {}; // data that will be used to decide
-			data.list = []; // contains the label information
-
 			var btn;
+			var conf = {};		// everything, that comes from Defaults or Fancy sections
+			var data = {};		// data that will be used to decide
 
-			data.mode = me.fix.txtDefaultMode;
+			data = merge(data, me.defaults);
+			data.list= [];		// label information
 
-			// fancyBox can be called with several pictures.
+			// pictureLink catches all unnamed params. It can be an array.
 			var pictureLink = getParam(params, 'pictureLink', undefined);
 			if (pictureLink) {
 				data.src = 'pictureLink';
-				data.mode = 'pictureLink';
-				data.tagName = 'pictureLink';
+				data.display = 'pictureLink';
+				data.tag = 'pictureLink';
 				pictureLink = params[0].pictureLink;
 				if (pictureLink.length > 1) {
-					data.mode = 'pictureLinkSlide'; // creates a slideshow
+					data.display = 'pictureLinkSlide'; // creates a slideshow
 				}
 			}
 
@@ -369,8 +351,7 @@ version.extensions.FancyBox = {
 				label = params[0].label;
 			}
 
-			// may be slideShowLinkList is needed ToDo
-			// var slideShowId = getParam(params, 'slideShow', undefined);
+			// paramContainer contains: tiddlerName, tiddlerName##sectionName or ##sectionName
 			// set defaults like: FancyBoxConfig
 			var configId = getParam(params, 'defaults', undefined);
 			if (configId) {
@@ -384,88 +365,57 @@ version.extensions.FancyBox = {
 				conf = merge(conf, tmp);
 			}
 
-			// set advanced params from macro params
-			data.conf = me.setFbAdvanced(conf, params);
+			me.setFbAdvanced(conf, params);
+	
+			data.conf = conf;
 
-			// console.log({'data':data});
-			// tiddler title is used as picture label by default
-			var useTiddlerTitle = getParam(params, 'useTiddlerTitle', undefined);
-			data.useTiddlerTitle = (useTiddlerTitle) ? useTiddlerTitle : (data.conf.useTiddlerTitle === false)? false : true;
-						
-			// if tiddler title contains an extension eg. 01.jpg ".jpg" will be cut off.
-			var cutExtension = getParam(params, 'cutExtension', undefined);
-			data.cutExtension = (cutExtension) ? cutExtension : (data.conf.cutExtension===false)? false : true;
+			// params that set the data.src
+			var sourceSetters = ['tag', 'pictureLink'];
 
-			// set the selector
-			var selector = getParam(params, 'selector', undefined);
-			if (selector) {
-				data.selector = selector;
-				data.mode = 'selector';
-			}
+			// params that set the data.display 
+			// 'mode' is not a mode setter. It belongs to optionalParams
+			var displaySetters = ['tag', 'imageButton', 'button', 'imageStack', 'selector'];
 
-			data.sortField = getParam(params, 'sort', 'title'); // ToDo
-			// sets paths for thumbs and pics. relative file paths are possible
-			// named params overwrite the global settings.
-			var thumbHost = getParam(params, 'thumbHost', undefined); // needs to be defined!
-			var picHost = getParam(params, 'picHost', undefined);
+			// these are optional params which are used by FancyBoxPlugin.
+			pc = ['useTiddlerTitle', 'cutExtension', 'selector', 
+				'thumbHost', 'picHost', 'labelSection', 'infoSection', 
+				'tag', 'imageButton', 'imageStack', 'button', 'mode', 'sortField', 'rbLink'];
 
-			data.thumbHost = (thumbHost) ? thumbHost : conf.thumbHost;
-			data.picHost = (picHost) ? picHost : conf.picHost;
+			var setDisplay, setSrc;
+			for (i=0, im=pc.length; i<im; i += 1) {
+				content = getParam(params, pc[i], '');
+				content = (content in me.helper) ? me.helper : content; // chk: true, false, null
 
-			// if tag is used, all pics are part of the TW .. create an overview.
-			var tagName = getParam(params, 'tag', undefined);
-			if (tagName) {
-				data.mode = 'tag';
-				data.src = 'tag';
-				data.tagName = tagName;
-			}
+				setDisplay = false;
+				setSrc = false;
+								
+				if (content) {
+					data[pc[i]] = content;
+					setDisplay = displaySetters.contains(pc[i]);
+					setSrc  = sourceSetters.contains(pc[i]);
+				}
+				else if (data.conf[pc[i]]) {
+					data[pc[i]] = data.conf[pc[i]];
+					setDisplay = displaySetters.contains(pc[i]);
+					setSrc  = sourceSetters.contains(pc[i]);
+				}
 
-			// labelSection .. references the given sections to be used as the picture title
-			// only overwritten by named param title.
-			var labelSection = getParam(params, 'labelSection', undefined);
-			data.labelSection = (labelSection) ? labelSection : (data.conf.labelSection)? data.conf.labelSection : 'label';
-
-			// docuSection .. references the given section to be used as the picture info, displayed with special titles
-			var infoSection = getParam(params, 'infoSection', undefined);
-			data.infoSection = (infoSection) ? infoSection : (data.conf.infoSection)? data.conf.infoSection : 'info';
-
-			// set slideShow like: SlideShowExample
-			var txtImageButton = getParam(params, 'imageButton', undefined);
-			var txtImageStack = getParam(params, 'imageStack', undefined);
-			var txtButton = getParam(params, 'button', undefined);
-
-			if (txtImageButton) {
-				data.mode = 'imageButton';
-				data.hide = true;
-			}
-			else if (txtButton) {
-				data.mode = 'button';
-				data.hide = true;
-			}
-			else if (txtImageStack) {
-				data.mode = 'imageStack';
-				data.hide = true;
-			}
-
-			// possible modes: 'slide' (default), 'picture'
-			// mode set by user overwrites all guesses!
-			var mode = getParam(params, 'mode', undefined);
-			data.mode = (mode) ? mode : data.mode;
+				// don't modify them if not needed.
+				if (setDisplay) {data.display = pc[i];}
+				if (setSrc) {data.src = pc[i];}
+			} // for
 
 			var genId = me.idGenerator();
-			data.genIdA = 'A' + genId.substr(1, 6);
+			data.genIdA = 'A' + genId.substr(1, 5);
 
 			var tlist, tid;
 			switch (data.src) {
 			case 'tag':
-				tlist = store.getTaggedTiddlers(data.tagName, data.sortField);
-
-				for (var i = 0; i < tlist.length; i += 1) {
+				tlist = store.getTaggedTiddlers(data.tag, data.sortField);
+				for (i = 0; i < tlist.length; i += 1) {
 					data.list[i] = {'label':''};
 				}
-
 				me.rdSlideInfo( tlist, data);				
-				me.thumbList( tlist, data);
 				break; // 'tag'
 			case 'pictureLink':
 				tlist = [];
@@ -474,64 +424,53 @@ version.extensions.FancyBox = {
 					if (tid) {
 						tlist.push(tid);
 						data.list[i] = {'label': (label && label[i]) ? label[i] : ''};
-					// console.log('dp: ', 'label:', label);						
-					}
-				}
-								
+					} // if (tid) ..
+				} // for ..
 				me.rdSlideInfo(tlist,data);
-				me.thumbList(tlist, data);
 				break; // 'tag'
-			case 'list':
-				// get the list of [img[prettyLink|pic][externalLink]]
-				// Better done with <<tiddler LinkedTiddler>> and selector !!!
-				break; // 'list'
 			}
 
 			// console.log({'data':data});
-			switch (data.mode) {
-
+			switch (data.display) {
 			case 'imageStack':
 				if ($.browser.mozilla || $.browser.webkit) {place = me.createStack();}
-				txtImageButton = txtImageStack;
-				// console.log('imageStack:', place);
 				// fall through is by intention
 			case 'imageButton':
-				// automatically makes use of AttachFilePluginFormatters
-				// check dependencies ToDo
-				data.tagName = data.tagName || 'manual';
+				data.hide = true;	// hide the DOM structure
+				data.tag = data.tag || 'button';
+
+				me.thumbList(tlist, data);
 
 				// createTiddlyButton(parent, text, tooltip, action, className, id, accessKey, attribs)
 				btn = createTiddlyButton(place, '', null, me.buttonSlideShow);
-
 				$(btn).removeClass('button');
-				wikify(txtImageButton, btn);
-
+				wikify(data.imageButton || data.imageStack, btn);
 				$(btn).data('data', data);
-
 				return;
 			//	break; // button
 			case 'button':
 				// check dependencies ToDo
-				data.tagName = data.tagName || 'manual';
+				data.tag = data.tag || 'button';
+				data.hide = true;
 
+				me.thumbList(tlist, data);
+				
 				// createTiddlyButton(parent, text, tooltip, action, className, id, accessKey, attribs)
-				btn = createTiddlyButton(place, txtButton, null, me.buttonSlideShow);
-
+				btn = createTiddlyButton(place, data.button, null, me.buttonSlideShow);
 				$(btn).data('data', data);
-
 				return;
 			//	break; // button
 			case 'tag':
-				data.selector = '.twfb-' + data.tagName + ' a';
+				me.thumbList(tlist, data);
+				data.selector = '.twfb-' + data.tag + ' a';
 				me.activateBox(data);
 				break; // tag
 			case 'pictureLink':
 			case 'pictureLinkSlide':
+				me.thumbList(tlist, data);
 				data.selector = '#' + data.genIdA + ' a.imageLink';
 				me.activateBox(data);
 				break; // tag
-			case 'list':
-				break; // list
 			case 'selector':
 				me.activateBox(data);
 				break; // xxx
